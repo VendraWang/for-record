@@ -1,0 +1,1319 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>极简 · 记录与统计</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background-color: #f5f3f0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 16px;
+            color: #1a1a1a;
+            line-height: 1.4;
+        }
+
+        .card {
+            max-width: 440px;
+            width: 100%;
+            background-color: #ffffff;
+            border-radius: 24px;
+            padding: 24px 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02), 0 1px 2px rgba(0, 0, 0, 0.03);
+            border: 1px solid #f0f0f0;
+        }
+
+        .divider {
+            height: 1px;
+            background-color: #f0f0f0;
+            margin: 20px 0;
+            border: none;
+        }
+
+        /* 签到板块 */
+        .checkin-panel {
+            margin-top: 16px;
+            background-color: #fafafa;
+            border-radius: 16px;
+            border: 1px solid #f0f0f0;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .checkin-panel.hidden { display: none; }
+        .checkin-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a1a1a;
+            letter-spacing: 0.02em;
+        }
+        .checkin-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 13px;
+            color: #5e5e5e;
+        }
+        .checkin-stats span {
+            font-weight: 500;
+            color: #1a1a1a;
+            font-feature-settings: "tnum";
+        }
+        .checkin-btn {
+            padding: 12px 0;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #1e1e1e;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            cursor: pointer;
+            transition: all 0.15s;
+            font-family: inherit;
+            letter-spacing: 0.02em;
+        }
+        .checkin-btn:hover { background-color: #333333; }
+
+        /* 中英文统计（页面最后） */
+        .stats-section { margin-top: 24px; padding-top: 8px; }
+        .stats-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 15px;
+            letter-spacing: 0.01em;
+            color: #2c2c2c;
+            padding: 10px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .stats-row:last-child { border-bottom: none; }
+        .stats-label { font-weight: 400; color: #5e5e5e; }
+        .stats-number {
+            font-weight: 500;
+            font-feature-settings: "tnum";
+            color: #000000;
+            background-color: #fafafa;
+            padding: 2px 10px;
+            border-radius: 40px;
+            font-size: 14px;
+            border: 1px solid #f0f0f0;
+        }
+
+        /* 日历 */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .calendar-header h2 {
+            font-size: 18px;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            color: #1a1a1a;
+        }
+        .calendar-nav { display: flex; gap: 12px; }
+        .calendar-nav button {
+            background: none;
+            border: 1px solid #e0e0e0;
+            border-radius: 40px;
+            width: 36px;
+            height: 36px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: #1a1a1a;
+            transition: all 0.15s;
+            background-color: #ffffff;
+            line-height: 1;
+            padding: 0;
+        }
+        .calendar-nav button:hover { background-color: #f7f7f7; border-color: #cccccc; }
+
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-size: 12px;
+            color: #8c8c8c;
+            margin-bottom: 8px;
+            font-weight: 400;
+            letter-spacing: 0.3px;
+        }
+
+        .days-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .day-cell {
+            aspect-ratio: 1 / 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            border-radius: 60px;
+            background-color: #ffffff;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background 0.15s, border 0.15s;
+            color: #2e2e2e;
+            position: relative;
+            font-feature-settings: "tnum";
+            padding: 2px;
+            line-height: 1.2;
+        }
+        .day-cell:hover { background-color: #f7f7f7; }
+
+        .day-cell.today {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-weight: 500;
+            border-color: #1e1e1e;
+        }
+
+        .day-cell.checked-in {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            font-weight: 500;
+            border-color: #1e1e1e;
+        }
+
+        .day-cell.selected {
+            border: 1px solid #a0a0a0;
+            background-color: #f2f2f2;
+        }
+        .day-cell.checked-in.selected {
+            border: 2px solid #a0a0a0;
+        }
+
+        .day-cell.future {
+            color: #c0c0c0;
+            background-color: #fcfcfc;
+        }
+        .day-cell.future:hover { background-color: #f5f5f5; }
+        .day-cell.future.selected {
+            background-color: #f2f2f2;
+            border-color: #a0a0a0;
+            color: #c0c0c0;
+        }
+        .day-cell.future.checked-in {
+            background-color: #fcfcfc;
+            color: #c0c0c0;
+            border-color: transparent;
+        }
+        .day-cell.future.checked-in.selected {
+            background-color: #f2f2f2;
+            border-color: #a0a0a0;
+        }
+
+        .day-cell.empty { background-color: transparent; pointer-events: none; border: none; }
+
+        .day-badge {
+            font-size: 9px;
+            background-color: #e0e0e0;
+            color: #3a3a3a;
+            border-radius: 20px;
+            padding: 0 5px;
+            position: absolute;
+            bottom: 1px;
+            right: 1px;
+            line-height: 13px;
+            min-width: 14px;
+            text-align: center;
+            font-weight: 500;
+            letter-spacing: -0.2px;
+        }
+        .day-cell.today .day-badge,
+        .day-cell.checked-in .day-badge { background-color: #ffffff; color: #1e1e1e; }
+        .day-cell.future .day-badge { background-color: #ececec; color: #b0b0b0; }
+
+        /* 可折叠面板通用样式 */
+        .collapsible-panel {
+            margin-top: 20px;
+            background-color: #fafafa;
+            border-radius: 16px;
+            border: 1px solid #f0f0f0;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 16px;
+            cursor: pointer;
+            user-select: none;
+            background-color: #fafafa;
+            transition: background 0.15s;
+        }
+        .panel-header:hover { background-color: #f5f5f5; }
+
+        .panel-header h3 {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a1a1a;
+            letter-spacing: 0.02em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .panel-header h3 .panel-hint {
+            font-size: 13px;
+            font-weight: 400;
+            color: #8c8c8c;
+        }
+
+        .toggle-icon {
+            font-size: 12px;
+            color: #8c8c8c;
+            transition: transform 0.2s ease;
+            line-height: 1;
+        }
+        .collapsible-panel.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        .panel-body {
+            padding: 0 16px 16px 16px;
+            transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease;
+            max-height: 800px;
+            opacity: 1;
+            overflow: hidden;
+        }
+        .collapsible-panel.collapsed .panel-body {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        /* 翻译量面板内的文本域 */
+        .text-stats-area { margin-top: 4px; }
+        .text-stats-area textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 16px;
+            font-size: 14px;
+            font-family: inherit;
+            background-color: #ffffff;
+            color: #1a1a1a;
+            resize: vertical;
+            outline: none;
+            transition: border 0.15s;
+            line-height: 1.5;
+        }
+        .text-stats-area textarea:focus { border-color: #b0b0b0; }
+        .text-stats-hint {
+            font-size: 12px;
+            color: #b0b0b0;
+            text-align: right;
+            margin-top: 6px;
+        }
+
+        /* 记录输入区域 */
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .input-group:first-child { margin-top: 4px; }
+        .input-group label {
+            font-size: 14px;
+            color: #3a3a3a;
+            min-width: 72px;
+        }
+        .input-group input {
+            flex: 1;
+            min-width: 70px;
+            padding: 10px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 40px;
+            font-size: 14px;
+            background-color: #ffffff;
+            outline: none;
+            font-family: inherit;
+            color: #1a1a1a;
+            transition: border 0.15s;
+        }
+        .input-group input:focus { border-color: #b0b0b0; }
+
+        .unit-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 40px;
+            padding: 8px 16px;
+            font-size: 14px;
+            color: #5e5e5e;
+            font-family: inherit;
+            min-width: 48px;
+            text-align: center;
+            user-select: none;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .button-row button {
+            flex: 1;
+            padding: 12px 0;
+            border-radius: 40px;
+            font-size: 14px;
+            font-weight: 500;
+            border: 1px solid #e0e0e0;
+            background-color: #ffffff;
+            cursor: pointer;
+            transition: all 0.15s;
+            color: #1a1a1a;
+            font-family: inherit;
+            letter-spacing: 0.02em;
+        }
+        .button-row button.primary {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border-color: #1e1e1e;
+        }
+        .button-row button.primary:hover { background-color: #333333; }
+        .button-row button:hover { background-color: #f5f5f5; }
+
+        /* 合并统计板块 */
+        .chart-section { margin-top: 24px; }
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .chart-header h3 {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a1a1a;
+            letter-spacing: 0.02em;
+        }
+        .chart-header .chart-hint {
+            font-size: 12px;
+            font-weight: 400;
+            color: #8c8c8c;
+        }
+
+        .range-selector {
+            margin-bottom: 16px;
+            background-color: #fafafa;
+            border-radius: 16px;
+            border: 1px solid #f0f0f0;
+            overflow: hidden;
+        }
+        .range-selector-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            cursor: pointer;
+            user-select: none;
+            font-size: 13px;
+            color: #5e5e5e;
+            transition: background 0.15s;
+        }
+        .range-selector-header:hover { background-color: #f5f5f5; }
+        .range-selector-header .range-current {
+            font-weight: 500;
+            color: #1a1a1a;
+        }
+        .range-selector-body {
+            padding: 0 14px 12px 14px;
+            display: flex;
+            gap: 8px;
+            transition: max-height 0.25s ease, opacity 0.2s ease, padding 0.2s ease;
+            max-height: 100px;
+            opacity: 1;
+            overflow: hidden;
+        }
+        .range-selector.collapsed .range-selector-body {
+            max-height: 0;
+            opacity: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+        .range-selector.collapsed .toggle-icon-small {
+            transform: rotate(-90deg);
+        }
+        .toggle-icon-small {
+            font-size: 10px;
+            color: #8c8c8c;
+            transition: transform 0.2s ease;
+            line-height: 1;
+        }
+        .range-option {
+            flex: 1;
+            padding: 8px 0;
+            border-radius: 40px;
+            font-size: 13px;
+            text-align: center;
+            border: 1px solid #e0e0e0;
+            background-color: #ffffff;
+            cursor: pointer;
+            color: #3a3a3a;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .range-option:hover { background-color: #f5f5f5; }
+        .range-option.active {
+            background-color: #1e1e1e;
+            color: #ffffff;
+            border-color: #1e1e1e;
+        }
+
+        .stat-block { margin-bottom: 20px; }
+        .stat-block:last-child { margin-bottom: 0; }
+        .stat-block-title {
+            font-size: 13px;
+            font-weight: 500;
+            color: #5e5e5e;
+            margin-bottom: 8px;
+            letter-spacing: 0.02em;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+        .stat-block-title .stat-unit {
+            font-size: 11px;
+            font-weight: 400;
+            color: #b0b0b0;
+        }
+
+        .bars-container {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bar-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+        }
+        .bar-date {
+            width: 44px;
+            font-size: 12px;
+            color: #5e5e5e;
+            font-weight: 400;
+            font-feature-settings: "tnum";
+            flex-shrink: 0;
+        }
+        .bar-wrapper {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #fafafa;
+            border-radius: 20px;
+            padding: 2px 2px 2px 0;
+            border: 1px solid #f0f0f0;
+            min-height: 30px;
+        }
+        .bar-fill {
+            height: 22px;
+            background-color: #d0d0d0;
+            border-radius: 20px;
+            transition: width 0.2s ease;
+            min-width: 4px;
+            max-width: 100%;
+            border: 1px solid #c0c0c0;
+        }
+        .bar-value {
+            font-size: 12px;
+            color: #2c2c2c;
+            font-weight: 500;
+            padding-right: 10px;
+            white-space: nowrap;
+            font-feature-settings: "tnum";
+        }
+        .empty-chart-message {
+            font-size: 13px;
+            color: #8c8c8c;
+            text-align: center;
+            padding: 16px 0;
+            background-color: #fafafa;
+            border-radius: 16px;
+            border: 1px dashed #e0e0e0;
+        }
+
+        /* 总计行 */
+        .stat-total {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #f0f0f0;
+            font-size: 13px;
+        }
+        .stat-total-label {
+            color: #5e5e5e;
+            font-weight: 400;
+        }
+        .stat-total-value {
+            font-weight: 600;
+            color: #1a1a1a;
+            font-feature-settings: "tnum";
+            background-color: #f5f5f5;
+            padding: 2px 12px;
+            border-radius: 40px;
+            border: 1px solid #ececec;
+        }
+
+        /* 记录列表 */
+        .records-list {
+            margin-top: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+            font-size: 13px;
+            padding-right: 4px;
+        }
+        .record-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f0f0f0;
+            color: #2c2c2c;
+            gap: 8px;
+        }
+        .record-item:last-child { border-bottom: none; }
+
+        .record-duration {
+            font-weight: 500;
+            font-feature-settings: "tnum";
+            flex: 1;
+            min-width: 60px;
+        }
+        .record-count {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 12px;
+            color: #5e5e5e;
+            background-color: #f5f5f5;
+            padding: 2px 10px;
+            border-radius: 40px;
+            border: 1px solid #ececec;
+        }
+        .record-count input {
+            width: 36px;
+            border: none;
+            background: transparent;
+            font-size: 12px;
+            text-align: center;
+            font-family: inherit;
+            color: #1a1a1a;
+            font-weight: 500;
+            outline: none;
+            -moz-appearance: textfield;
+        }
+        .record-count input::-webkit-outer-spin-button,
+        .record-count input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .record-delete {
+            color: #a0a0a0;
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 0 6px;
+            line-height: 1;
+            border-radius: 20px;
+            flex-shrink: 0;
+        }
+        .record-delete:hover { color: #1a1a1a; background-color: #f0f0f0; }
+
+        .total-line {
+            font-size: 12px;
+            color: #5e5e5e;
+            text-align: right;
+            margin-top: 6px;
+        }
+
+        .translation-stats {
+            display: flex;
+            gap: 16px;
+            margin-top: 8px;
+            font-size: 12px;
+            color: #5e5e5e;
+            flex-wrap: wrap;
+        }
+        .translation-stats span {
+            background-color: #f5f5f5;
+            padding: 2px 10px;
+            border-radius: 40px;
+            border: 1px solid #ececec;
+            font-weight: 500;
+            color: #1a1a1a;
+            font-feature-settings: "tnum";
+        }
+
+        hr { border: none; border-top: 1px solid #f0f0f0; margin: 20px 0; }
+
+        .records-list::-webkit-scrollbar { width: 3px; }
+        .records-list::-webkit-scrollbar-thumb { background-color: #d0d0d0; border-radius: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card" id="app">
+        <!-- 日历 -->
+        <div class="calendar-header">
+            <h2 id="monthYearDisplay">2025年1月</h2>
+            <div class="calendar-nav">
+                <button id="prevMonthBtn" aria-label="上个月">←</button>
+                <button id="nextMonthBtn" aria-label="下个月">→</button>
+            </div>
+        </div>
+
+        <div class="weekdays">
+            <span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span><span>日</span>
+        </div>
+
+        <div class="days-grid" id="daysGrid"></div>
+
+        <!-- 签到板块 -->
+        <div class="checkin-panel" id="checkinPanel">
+            <div class="checkin-title">每日签到</div>
+            <div class="checkin-stats">
+                <div>连续签到：<span id="streakDays">0</span> 天</div>
+                <div>累计签到：<span id="totalDays">0</span> 天</div>
+            </div>
+            <button class="checkin-btn" id="checkinBtn">签到</button>
+        </div>
+
+        <!-- 添加记录（可折叠） -->
+        <div class="collapsible-panel" id="recordPanel">
+            <div class="panel-header" id="recordPanelHeader">
+                <h3>
+                    <span class="panel-hint" id="selectedDateHint">—</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="panel-body" id="recordPanelBody">
+                <div class="input-group">
+                    <label>时长</label>
+                    <input type="number" id="durationInput" placeholder="数值" min="0" step="0.1" value="30">
+                    <div class="unit-display">m</div>
+                </div>
+                <div class="input-group">
+                    <label>条数</label>
+                    <input type="number" id="countInput" placeholder="条数" min="1" step="1" value="1">
+                </div>
+                <div class="input-group">
+                    <label>翻译字数（中字）</label>
+                    <input type="number" id="transChineseInput" placeholder="中字数量" min="0" step="1" value="0">
+                </div>
+                <div class="input-group">
+                    <label>翻译字数（英字）</label>
+                    <input type="number" id="transEnglishInput" placeholder="英字数量" min="0" step="1" value="0">
+                </div>
+                <div class="button-row">
+                    <button id="addRecordBtn" class="primary">添加</button>
+                    <button id="updateBtn">更新</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 当日记录列表 -->
+        <div style="margin-top: 12px;">
+            <div style="display: flex; justify-content: space-between; font-size: 13px; color: #5e5e5e; margin-bottom: 6px;">
+                <span>当日记录</span>
+                <span id="todayCountDisplay">0 条</span>
+            </div>
+            <div class="records-list" id="recordsList"></div>
+            <div class="total-line" id="totalDurationDisplay"></div>
+            <div class="translation-stats" id="translationStats">
+                <span>翻译字数（中字）：<span id="transChineseCount">0</span></span>
+                <span>翻译字数（英字）：<span id="transEnglishCount">0</span></span>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 合并统计板块 -->
+        <div class="chart-section">
+            <div class="chart-header">
+                <h3>每日统计</h3>
+                <span class="chart-hint">时长/中字/英字</span>
+            </div>
+
+            <div class="range-selector collapsed" id="rangeSelector">
+                <div class="range-selector-header" id="rangeSelectorHeader">
+                    <span>时间范围：<span class="range-current" id="rangeCurrentLabel">近一周</span></span>
+                    <span class="toggle-icon-small">▼</span>
+                </div>
+                <div class="range-selector-body" id="rangeSelectorBody">
+                    <button class="range-option active" data-range="7">近一周</button>
+                    <button class="range-option" data-range="14">近两周</button>
+                    <button class="range-option" data-range="30">近一个月</button>
+                </div>
+            </div>
+
+            <!-- 时长统计（含总计） -->
+            <div class="stat-block">
+                <div class="stat-block-title">
+                    <span>时长统计</span>
+                    <span class="stat-unit">分钟</span>
+                </div>
+                <div id="durationChart" class="bars-container"></div>
+                <div class="stat-total">
+                    <span class="stat-total-label">总计</span>
+                    <span class="stat-total-value" id="totalDuration">0 分钟</span>
+                </div>
+            </div>
+
+            <!-- 中字统计（含总计） -->
+            <div class="stat-block">
+                <div class="stat-block-title">
+                    <span>中字统计</span>
+                    <span class="stat-unit">字</span>
+                </div>
+                <div id="chineseChart" class="bars-container"></div>
+                <div class="stat-total">
+                    <span class="stat-total-label">总计</span>
+                    <span class="stat-total-value" id="totalChinese">0 字</span>
+                </div>
+            </div>
+
+            <!-- 英字统计（含总计） -->
+            <div class="stat-block">
+                <div class="stat-block-title">
+                    <span>英字统计</span>
+                    <span class="stat-unit">字</span>
+                </div>
+                <div id="englishChart" class="bars-container"></div>
+                <div class="stat-total">
+                    <span class="stat-total-label">总计</span>
+                    <span class="stat-total-value" id="totalEnglish">0 字</span>
+                </div>
+            </div>
+        </div>
+
+        <hr class="divider">
+
+        <!-- 翻译量（可折叠） -->
+        <div class="collapsible-panel" id="textStatsPanel">
+            <div class="panel-header" id="textStatsHeader">
+                <h3>
+                    <span>翻译量</span>
+                    <span class="panel-hint">中字 / 英字</span>
+                </h3>
+                <span class="toggle-icon">▼</span>
+            </div>
+            <div class="panel-body" id="textStatsBody">
+                <div class="text-stats-area">
+                    <textarea id="textStatsInput" placeholder="在此输入或粘贴文本，实时统计中字和英字数量…"></textarea>
+                    <div class="text-stats-hint">实时统计，无需点击更新</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中英文统计结果（页面最后） -->
+        <div class="stats-section">
+            <div class="stats-row">
+                <span class="stats-label">中文字符数</span>
+                <span class="stats-number" id="chineseCount">0</span>
+            </div>
+            <div class="stats-row">
+                <span class="stats-label">英文单词数</span>
+                <span class="stats-number" id="englishCount">0</span>
+            </div>
+            <div style="font-size: 12px; color: #b0b0b0; margin-top: 12px; text-align: right; border-top: 1px solid #f0f0f0; padding-top: 12px;">
+                根据上方【翻译量】输入内容实时计算
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            let recordsStore = {};
+            let checkinStore = {};
+
+            let selectedDate = formatDate(new Date());
+            let currentYear = new Date().getFullYear();
+            let currentMonth = new Date().getMonth();
+            let chartRangeDays = 7;
+
+            // DOM
+            const monthYearDisplay = document.getElementById('monthYearDisplay');
+            const daysGrid = document.getElementById('daysGrid');
+            const prevMonthBtn = document.getElementById('prevMonthBtn');
+            const nextMonthBtn = document.getElementById('nextMonthBtn');
+            const selectedDateHint = document.getElementById('selectedDateHint');
+            const durationInput = document.getElementById('durationInput');
+            const countInput = document.getElementById('countInput');
+            const transChineseInput = document.getElementById('transChineseInput');
+            const transEnglishInput = document.getElementById('transEnglishInput');
+            const addRecordBtn = document.getElementById('addRecordBtn');
+            const updateBtn = document.getElementById('updateBtn');
+            const recordsList = document.getElementById('recordsList');
+            const todayCountDisplay = document.getElementById('todayCountDisplay');
+            const totalDurationDisplay = document.getElementById('totalDurationDisplay');
+            const chineseCountSpan = document.getElementById('chineseCount');
+            const englishCountSpan = document.getElementById('englishCount');
+            const transChineseCountSpan = document.getElementById('transChineseCount');
+            const transEnglishCountSpan = document.getElementById('transEnglishCount');
+
+            const durationChart = document.getElementById('durationChart');
+            const chineseChart = document.getElementById('chineseChart');
+            const englishChart = document.getElementById('englishChart');
+
+            // 总计元素
+            const totalDurationEl = document.getElementById('totalDuration');
+            const totalChineseEl = document.getElementById('totalChinese');
+            const totalEnglishEl = document.getElementById('totalEnglish');
+
+            const checkinPanel = document.getElementById('checkinPanel');
+            const checkinBtn = document.getElementById('checkinBtn');
+            const streakDaysSpan = document.getElementById('streakDays');
+            const totalDaysSpan = document.getElementById('totalDays');
+
+            const recordPanel = document.getElementById('recordPanel');
+            const recordPanelHeader = document.getElementById('recordPanelHeader');
+            const textStatsPanel = document.getElementById('textStatsPanel');
+            const textStatsHeader = document.getElementById('textStatsHeader');
+            const textStatsInput = document.getElementById('textStatsInput');
+
+            const rangeSelector = document.getElementById('rangeSelector');
+            const rangeSelectorHeader = document.getElementById('rangeSelectorHeader');
+            const rangeCurrentLabel = document.getElementById('rangeCurrentLabel');
+            const rangeOptions = document.querySelectorAll('.range-option');
+
+            // ---------- 工具 ----------
+            function formatDate(date) {
+                const y = date.getFullYear();
+                const m = String(date.getMonth() + 1).padStart(2, '0');
+                const d = String(date.getDate()).padStart(2, '0');
+                return `${y}-${m}-${d}`;
+            }
+
+            function getDaysInMonth(year, month) {
+                return new Date(year, month + 1, 0).getDate();
+            }
+
+            function getFirstWeekdayOfMonth(year, month) {
+                let day = new Date(year, month, 1).getDay();
+                return day === 0 ? 6 : day - 1;
+            }
+
+            function getRecentDates(days) {
+                const dates = [];
+                const today = new Date();
+                for (let i = days - 1; i >= 0; i--) {
+                    const d = new Date(today);
+                    d.setDate(today.getDate() - i);
+                    dates.push(formatDate(d));
+                }
+                return dates;
+            }
+
+            // ---------- 签到 ----------
+            function isCheckedInToday() {
+                return checkinStore[formatDate(new Date())] === true;
+            }
+
+            function calculateStreak() {
+                let streak = 0;
+                const today = new Date();
+                for (let i = 0; i < 365; i++) {
+                    const d = new Date(today);
+                    d.setDate(today.getDate() - i);
+                    if (checkinStore[formatDate(d)]) streak++;
+                    else break;
+                }
+                return streak;
+            }
+
+            function calculateTotal() {
+                return Object.keys(checkinStore).length;
+            }
+
+            function updateCheckinUI() {
+                if (isCheckedInToday()) {
+                    checkinPanel.classList.add('hidden');
+                } else {
+                    checkinPanel.classList.remove('hidden');
+                }
+                streakDaysSpan.textContent = calculateStreak();
+                totalDaysSpan.textContent = calculateTotal();
+            }
+
+            function doCheckin() {
+                const todayStr = formatDate(new Date());
+                if (!checkinStore[todayStr]) checkinStore[todayStr] = true;
+                updateCheckinUI();
+                renderCalendar();
+            }
+
+            function scheduleDailyReset() {
+                const now = new Date();
+                const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+                setTimeout(() => {
+                    updateCheckinUI();
+                    renderCalendar();
+                    scheduleDailyReset();
+                }, tomorrow - now);
+            }
+
+            // ---------- 日历 ----------
+            function renderCalendar() {
+                const year = currentYear, month = currentMonth;
+                monthYearDisplay.textContent = `${year}年${month + 1}月`;
+
+                const firstWeekday = getFirstWeekdayOfMonth(year, month);
+                const daysInMonth = getDaysInMonth(year, month);
+                const today = new Date();
+                const todayStr = formatDate(today);
+                const todayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+                let html = '';
+                for (let i = 0; i < firstWeekday; i++) {
+                    html += `<div class="day-cell empty"></div>`;
+                }
+
+                for (let d = 1; d <= daysInMonth; d++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+                    const cellTime = new Date(year, month, d).getTime();
+
+                    const isToday = (dateStr === todayStr);
+                    const isFuture = cellTime > todayStart;
+                    const isSelected = (dateStr === selectedDate);
+                    const isCheckedIn = checkinStore[dateStr] === true;
+
+                    const records = recordsStore[dateStr] || [];
+                    const totalCount = records.reduce((sum, rec) => sum + (rec.count || 1), 0);
+
+                    let classes = 'day-cell';
+                    if (isToday) classes += ' today';
+                    if (isFuture) classes += ' future';
+                    if (isSelected) classes += ' selected';
+                    if (isCheckedIn && !isFuture) classes += ' checked-in';
+
+                    const badge = totalCount > 0 ? `<span class="day-badge">${totalCount}</span>` : '';
+
+                    html += `<div class="${classes}" data-date="${dateStr}">${d}${badge}</div>`;
+                }
+
+                daysGrid.innerHTML = html;
+
+                document.querySelectorAll('.day-cell[data-date]').forEach(cell => {
+                    cell.addEventListener('click', () => {
+                        const date = cell.getAttribute('data-date');
+                        if (date) {
+                            selectedDate = date;
+                            renderCalendar();
+                            renderRecordPanel();
+                        }
+                    });
+                });
+            }
+
+            function changeMonth(delta) {
+                let newMonth = currentMonth + delta;
+                let newYear = currentYear;
+                if (newMonth < 0) { newYear -= 1; newMonth = 11; }
+                else if (newMonth > 11) { newYear += 1; newMonth = 0; }
+                currentYear = newYear;
+                currentMonth = newMonth;
+                renderCalendar();
+            }
+
+            // ---------- 记录面板 ----------
+            function renderRecordPanel() {
+                const [y, m, d] = selectedDate.split('-');
+                selectedDateHint.textContent = `${m}月${d}日`;
+
+                const records = recordsStore[selectedDate] || [];
+                const totalCount = records.reduce((sum, rec) => sum + (rec.count || 1), 0);
+                todayCountDisplay.textContent = `${totalCount} 条`;
+
+                if (records.length === 0) {
+                    recordsList.innerHTML = `<div style="color: #b0b0b0; font-size: 13px; padding: 8px 0; text-align: center;">暂无记录</div>`;
+                } else {
+                    recordsList.innerHTML = records.map((rec, idx) => {
+                        const duration = rec.duration;
+                        const count = rec.count || 1;
+                        const transC = rec.transChinese || 0;
+                        const transE = rec.transEnglish || 0;
+                        return `<div class="record-item">
+                            <span class="record-duration">${duration}m · ${count}条 · 中${transC} 英${transE}</span>
+                            <div class="record-count">
+                                <span>×</span>
+                                <input type="number" class="count-edit" data-index="${idx}" data-date="${selectedDate}" value="${count}" min="1" step="1">
+                            </div>
+                            <button class="record-delete" data-index="${idx}" data-date="${selectedDate}">✕</button>
+                        </div>`;
+                    }).join('');
+                }
+
+                // 总时长（不乘条数）
+                let totalMinutes = 0;
+                records.forEach(rec => { totalMinutes += rec.duration; });
+                if (totalMinutes > 0) {
+                    const hours = Math.floor(totalMinutes / 60);
+                    const mins = Math.round(totalMinutes % 60);
+                    totalDurationDisplay.textContent = `总时长：${hours > 0 ? hours + 'h ' : ''}${mins}m`;
+                } else {
+                    totalDurationDisplay.textContent = '';
+                }
+
+                updateTranslationStats();
+
+                // 删除
+                document.querySelectorAll('.record-delete').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const date = btn.getAttribute('data-date');
+                        const index = parseInt(btn.getAttribute('data-index'), 10);
+                        if (recordsStore[date]) {
+                            recordsStore[date].splice(index, 1);
+                            if (recordsStore[date].length === 0) delete recordsStore[date];
+                            renderCalendar();
+                            renderRecordPanel();
+                            renderChart();
+                        }
+                    });
+                });
+
+                // 条数编辑
+                document.querySelectorAll('.count-edit').forEach(input => {
+                    input.addEventListener('change', (e) => {
+                        const date = input.getAttribute('data-date');
+                        const index = parseInt(input.getAttribute('data-index'), 10);
+                        let newCount = parseInt(e.target.value, 10);
+                        if (isNaN(newCount) || newCount < 1) newCount = 1;
+                        e.target.value = newCount;
+
+                        if (recordsStore[date] && recordsStore[date][index]) {
+                            recordsStore[date][index].count = newCount;
+                            renderCalendar();
+                            renderRecordPanel();
+                            renderChart();
+                        }
+                    });
+                });
+            }
+
+            function updateTranslationStats() {
+                const records = recordsStore[selectedDate] || [];
+                let totalChinese = 0;
+                let totalEnglish = 0;
+                records.forEach(rec => {
+                    totalChinese += rec.transChinese || 0;
+                    totalEnglish += rec.transEnglish || 0;
+                });
+                transChineseCountSpan.textContent = totalChinese;
+                transEnglishCountSpan.textContent = totalEnglish;
+            }
+
+            // ---------- 添加记录 ----------
+            function addRecord() {
+                const durationVal = parseFloat(durationInput.value);
+                const countVal = parseInt(countInput.value, 10);
+                const transCVal = parseInt(transChineseInput.value, 10) || 0;
+                const transEVal = parseInt(transEnglishInput.value, 10) || 0;
+
+                if (isNaN(durationVal) || durationVal <= 0) {
+                    alert('请输入有效的时长数值');
+                    return;
+                }
+                if (isNaN(countVal) || countVal < 1) {
+                    alert('请输入有效的条数');
+                    return;
+                }
+
+                if (!recordsStore[selectedDate]) recordsStore[selectedDate] = [];
+                recordsStore[selectedDate].push({
+                    duration: durationVal,
+                    unit: 'm',
+                    count: countVal,
+                    transChinese: transCVal,
+                    transEnglish: transEVal
+                });
+
+                durationInput.value = '30';
+                countInput.value = '1';
+                transChineseInput.value = '0';
+                transEnglishInput.value = '0';
+
+                renderCalendar();
+                renderRecordPanel();
+                renderChart();
+            }
+
+            // ---------- 图表（含总计）----------
+            function renderChart() {
+                const recentDates = getRecentDates(chartRangeDays);
+                const datesWithData = recentDates.filter(date => recordsStore[date] && recordsStore[date].length > 0);
+
+                // 计算范围内的总计
+                let rangeTotalMin = 0;
+                let rangeTotalChinese = 0;
+                let rangeTotalEnglish = 0;
+
+                // 先把所有范围内有数据的天数遍历一遍算总计
+                recentDates.forEach(date => {
+                    const records = recordsStore[date] || [];
+                    records.forEach(rec => {
+                        rangeTotalMin += rec.duration;
+                        rangeTotalChinese += (rec.transChinese || 0);
+                        rangeTotalEnglish += (rec.transEnglish || 0);
+                    });
+                });
+
+                // 更新总计显示
+                totalDurationEl.textContent = `${rangeTotalMin} 分钟`;
+                totalChineseEl.textContent = `${rangeTotalChinese} 字`;
+                totalEnglishEl.textContent = `${rangeTotalEnglish} 字`;
+
+                if (datesWithData.length === 0) {
+                    const emptyMsg = `<div class="empty-chart-message">该时间范围内暂无记录</div>`;
+                    durationChart.innerHTML = emptyMsg;
+                    chineseChart.innerHTML = emptyMsg;
+                    englishChart.innerHTML = emptyMsg;
+                    return;
+                }
+
+                datesWithData.sort((a, b) => a.localeCompare(b));
+
+                const dailyMinutes = {};
+                const dailyChinese = {};
+                const dailyEnglish = {};
+                let maxMinutes = 0, maxChinese = 0, maxEnglish = 0;
+
+                datesWithData.forEach(date => {
+                    const records = recordsStore[date];
+                    let totalMin = 0, totalC = 0, totalE = 0;
+                    records.forEach(rec => {
+                        totalMin += rec.duration;
+                        totalC += (rec.transChinese || 0);
+                        totalE += (rec.transEnglish || 0);
+                    });
+                    dailyMinutes[date] = totalMin;
+                    dailyChinese[date] = totalC;
+                    dailyEnglish[date] = totalE;
+                    if (totalMin > maxMinutes) maxMinutes = totalMin;
+                    if (totalC > maxChinese) maxChinese = totalC;
+                    if (totalE > maxEnglish) maxEnglish = totalE;
+                });
+
+                function buildBarsHtml(dates, dataMap, maxVal, unitLabel) {
+                    if (maxVal === 0) maxVal = 1;
+                    let html = '';
+                    dates.forEach(date => {
+                        const val = dataMap[date] || 0;
+                        const widthPercent = Math.max(6, (val / maxVal) * 100);
+                        const [_, month, day] = date.split('-');
+                        const displayDate = `${parseInt(month)}/${parseInt(day)}`;
+                        html += `<div class="bar-item">
+                            <span class="bar-date">${displayDate}</span>
+                            <div class="bar-wrapper">
+                                <div class="bar-fill" style="width: ${widthPercent}%;"></div>
+                                <span class="bar-value">${val}${unitLabel}</span>
+                            </div>
+                        </div>`;
+                    });
+                    return html;
+                }
+
+                durationChart.innerHTML = buildBarsHtml(datesWithData, dailyMinutes, maxMinutes, '分钟');
+                chineseChart.innerHTML = buildBarsHtml(datesWithData, dailyChinese, maxChinese, '字');
+                englishChart.innerHTML = buildBarsHtml(datesWithData, dailyEnglish, maxEnglish, '字');
+            }
+
+            // ---------- 更新全部 ----------
+            function updateAll() {
+                renderChart();
+                renderRecordPanel();
+                renderCalendar();
+                updateTranslationStats();
+                updateTextStats();
+            }
+
+            // ---------- 翻译量统计 ----------
+            function updateTextStats() {
+                const text = textStatsInput.value || '';
+                const chineseChars = text.match(/[\u4e00-\u9fa5]/g) || [];
+                const englishWords = text.match(/[a-zA-Z]+/g) || [];
+                chineseCountSpan.textContent = chineseChars.length;
+                englishCountSpan.textContent = englishWords.length;
+            }
+
+            // ---------- 初始化 ----------
+            function init() {
+                selectedDate = formatDate(new Date());
+                const today = new Date();
+                currentYear = today.getFullYear();
+                currentMonth = today.getMonth();
+
+                renderCalendar();
+                renderRecordPanel();
+                renderChart();
+                updateTextStats();
+                updateCheckinUI();
+
+                recordPanelHeader.addEventListener('click', () => recordPanel.classList.toggle('collapsed'));
+                textStatsHeader.addEventListener('click', () => textStatsPanel.classList.toggle('collapsed'));
+
+                rangeSelectorHeader.addEventListener('click', () => rangeSelector.classList.toggle('collapsed'));
+                rangeOptions.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        chartRangeDays = parseInt(btn.getAttribute('data-range'), 10);
+                        rangeOptions.forEach(b => b.classList.remove('active'));
+                        btn.classList.add('active');
+                        rangeCurrentLabel.textContent = btn.textContent.trim();
+                        renderChart();
+                    });
+                });
+
+                textStatsInput.addEventListener('input', updateTextStats);
+                checkinBtn.addEventListener('click', doCheckin);
+
+                prevMonthBtn.addEventListener('click', () => changeMonth(-1));
+                nextMonthBtn.addEventListener('click', () => changeMonth(1));
+
+                addRecordBtn.addEventListener('click', addRecord);
+                updateBtn.addEventListener('click', updateAll);
+
+                ['durationInput', 'countInput', 'transChineseInput', 'transEnglishInput'].forEach(id => {
+                    document.getElementById(id).addEventListener('keypress', (e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); addRecord(); }
+                    });
+                });
+
+                scheduleDailyReset();
+            }
+
+            init();
+        })();
+    </script>
+</body>
+</html>
